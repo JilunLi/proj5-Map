@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+    <head>
+        <title>My Map!</title>
+        <link rel="stylesheet" href = 
+        "https://unpkg.com/leaflet@1.0.1/dist/leaflet.css" />
+        <script 
+            src="https://unpkg.com/leaflet@1.0.1/dist/leaflet.js">
+        </script>
+
+
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script type="text/javascript"
+            src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js">
+        </script>
+
+        <script src="https://www.mapquestapi.com/sdk/leaflet/v2.s/mq-map.js?key={{g.mapquestk}}"
+        ></script>
+    <script src="https://www.mapquestapi.com/sdk/leaflet/v2.s/mq-geocoding.js?key={{g.mapquestk}}"></script>
+
+</head>
+
+    <link rel="stylesheet" href="/static/css/map.css" />
+<body>
+
+    <div id="map"></div>
+    <script>
+        var click;
+        var poi;
+        var marker;
+        var eugene = [37.066,-97.7547]
+        var mapbox = new L.TileLayer('https://api.tiles.mapbox.com/v4/mapbox.streets/{z}/{x}/{y}@2x.png?access_token=' + "{{g.mapboxk}}", {
+                attribution: 'Map data © <a href="http://osm.org/copyright">OpenStreetMap</a> contributors. Tiles from <a href="https://www.mapbox.com">Mapbox</a>.'
+        });
+
+        var worldMap= new L.map('map',{
+                layers: [mapbox, MQ.mapLayer()],
+                center: eugene,
+                zoom: 16,
+                zoomControl: true
+        }).fitWorld();
+
+        worldMap.locate({setView: true, maxZoom: 16});
+
+        function FoundFunc(e) {
+            var radius = e.accuracy / 2;
+            click = L.marker(e.latlng)
+            poi = e.latlng;
+            geocode.reverse(e.latlng);
+            L.circle(e.latlng, radius).addTo(worldMap);
+        }
+
+        worldMap.on('locationfound', FoundFunc);
+        function onClick(e) {
+            marker = new L.marker(e.latlng).addTo(worldMap);
+            geocode.reverse(e.latlng);
+        }
+
+        worldMap.on('click', onClick)
+        geocode = MQ.geocode().on('success', function(e) {
+                if (poi.lat == e.result.search.latLng.lat && poi.lng == e.result.search.latLng.lng) {
+                    click.bindTooltip("we locate at : " + geocode.describeLocation(e.result.best), 
+                        {offset:L.point(-1,-1),permanent: true, opacity: 0.9});
+                    click.addTo(worldMap);
+                } else {
+                    marker.bindPopup(geocode.describeLocation(e.result.best)).openPopup();
+                }
+        });
+
+        {% for p in g.pois %}
+        L.marker([{{p[0]}}, {{p[1]}}]).bindTooltip("{{p[2]}}" ,
+            {offset:L.point(-1,-1),
+                permanent: true, opacity: 0.9}).addTo(worldMap);
+        {% endfor %}
+
+    </script>
+</body>
+ </html>
